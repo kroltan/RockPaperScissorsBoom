@@ -23,6 +23,12 @@ let victoriesOf element =
     | Scissors -> [Paper; Bomb]
     | Bomb -> [Rock; Paper]
 
+let (!) (result: MatchResult) =
+    match result with
+    | Won -> Lost
+    | Lost -> Won
+    | x -> x
+
 let evaluate player rival =
     let winsOver a b =
         victoriesOf a
@@ -45,7 +51,7 @@ let runRound (a: Player) (b: Player) options =
     let bChoice = b.Pick options
     let result = evaluate aChoice bChoice
     a.AnnounceResult result
-    b.AnnounceResult result
+    b.AnnounceResult !result
 
 let player = {
     Pick = fun options ->
