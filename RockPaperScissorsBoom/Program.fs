@@ -43,7 +43,7 @@ let parse options move =
     let compare =
         string
         >> cleanup
-        >> (fun x -> String.Equals(x, move))
+        >> (=) move
     Seq.tryFind compare options
 
 let runRound (a: Player) (b: Player) options =
@@ -55,10 +55,7 @@ let runRound (a: Player) (b: Player) options =
 
 let player = {
     Pick = fun options ->
-        options
-        |> Seq.map string
-        |> String.concat ", "
-        |> printfn "Choose one of %s:"
+        printfn "Choose one of %s:" (String.Join(", ", options))
         match parse options (Console.ReadLine()) with
         | Some(x) -> x
         | None -> failwith "Unknown choice!";
@@ -72,8 +69,8 @@ let player = {
 let computer = 
     let rng = Random()
     {
-        Pick = fun list -> 
-            let choice = Array.item (rng.Next(list.Length)) list
+        Pick = fun options -> 
+            let choice = Array.item (rng.Next(options.Length)) options
             printfn "Computer chose %A" choice
             choice;
         AnnounceResult = fun _ -> ();
@@ -81,8 +78,8 @@ let computer =
 
 [<EntryPoint>]
 let main argv =
-    let options = [|Rock; Paper; Scissors; Bomb|]
+    let validMoves = [|Rock; Paper; Scissors; Bomb|]
 
     while true do
-        runRound player computer options
+        runRound player computer validMoves
     0
