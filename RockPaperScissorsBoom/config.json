@@ -1,0 +1,20 @@
+﻿{
+  "Elements": [
+    {
+      "Name": "Rock",
+      "Victories": [ "Scissors" ]
+    },
+    {
+      "Name": "Paper",
+      "Victories": [ "Rock" ]
+    },
+    {
+      "Name": "Scissors",
+      "Victories": [ "Paper", "Bomb" ]
+    },
+    {
+      "Name": "Bomb",
+      "Victories": [ "Rock", "Paper" ]
+    }
+  ] 
+}

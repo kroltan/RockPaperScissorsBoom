@@ -1,27 +1,25 @@
 ﻿open System
+open System.IO
+open FSharp.Json
+
+type Element = {
+    Name: string;
+    Victories: string[]
+}
+
+type Configuration = {
+    Elements: Element[];
+}
 
 type MatchResult =
     | Won
     | Lost
     | Draw
 
-type Element =
-    | Rock
-    | Paper
-    | Scissors
-    | Bomb
-
 type Player = {
     Pick: Element[] -> Element;
     AnnounceResult: MatchResult -> unit;
 }
-
-let victoriesOf element =
-    match element with
-    | Rock -> [Scissors]
-    | Paper -> [Rock]
-    | Scissors -> [Paper; Bomb]
-    | Bomb -> [Rock; Paper]
 
 let (!) (result: MatchResult) =
     match result with
@@ -29,10 +27,11 @@ let (!) (result: MatchResult) =
     | Lost -> Won
     | x -> x
 
+let winsOver (player: Element) (rival: Element) =
+    player.Victories
+    |> Array.contains rival.Name
+
 let evaluate player rival =
-    let winsOver a b =
-        victoriesOf a
-        |> List.contains b
     match (winsOver player rival, winsOver rival player) with
     | (true, false) -> Won
     | (false, true) -> Lost
@@ -40,10 +39,10 @@ let evaluate player rival =
 
 let parse options move =
     let cleanup (input: string) = input.ToLowerInvariant().Trim()
-    let compare =
-        string
-        >> cleanup
-        >> (=) move
+    let compare e =
+        e.Name
+        |> cleanup
+        |> (=) move
     Seq.tryFind compare options
 
 let runRound (a: Player) (b: Player) options =
@@ -52,15 +51,22 @@ let runRound (a: Player) (b: Player) options =
     let result = evaluate aChoice bChoice
     a.AnnounceResult result
     b.AnnounceResult !result
+    result
 
 let player = {
-    Pick = fun options ->
-        printfn "Choose one of %s:" (String.Join(", ", options))
-        match parse options (Console.ReadLine()) with
-        | Some(x) -> x
-        | None -> failwith "Unknown choice!";
-    AnnounceResult = fun result ->
-        match result with
+    Pick = fun options -> 
+        let rec choose () =
+            options
+            |> Seq.map (fun x -> x.Name)
+            |> fun xs -> String.Join(", ", xs)
+            |> printf "Choose one of %s: "
+            match parse options (Console.ReadLine()) with
+            | Some(x) -> x
+            | None ->
+                printfn "Unknown choice!"
+                choose ()
+        choose ()
+    AnnounceResult = function
         | Won -> printfn "You won!"
         | Lost -> printfn "You lost!"
         | Draw -> printfn "It's a draw!"
@@ -71,15 +77,20 @@ let computer =
     {
         Pick = fun options -> 
             let choice = Array.item (rng.Next(options.Length)) options
-            printfn "Computer chose %A" choice
-            choice;
+            printfn "Computer chose %s" choice.Name
+            choice
         AnnounceResult = fun _ -> ();
     }
 
+let setup =
+    File.ReadAllText
+    >> Json.deserialize<Configuration>
+
 [<EntryPoint>]
 let main argv =
-    let validMoves = [|Rock; Paper; Scissors; Bomb|]
+    let config = setup (__SOURCE_DIRECTORY__ + "/config.json")
 
     while true do
-        runRound player computer validMoves
+        runRound player computer config.Elements
+        |> ignore
     0
